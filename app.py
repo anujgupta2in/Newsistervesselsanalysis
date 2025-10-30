@@ -38,8 +38,26 @@ def process_file(file, filename):
     
     df = clean_dataframe(df)
     
-    if len(df.columns) > 1:
-        df['Is_Critical'] = df.iloc[:, 1] == 'C'
+    # Find the "Critical" column regardless of its position
+    critical_col = None
+    
+    # First, try to find a column explicitly named "Critical"
+    for col in df.columns:
+        if col.strip().lower() == 'critical':
+            critical_col = col
+            break
+    
+    # If not found, look for any column that contains 'C' values (likely the critical indicator column)
+    if critical_col is None:
+        for col in df.columns:
+            # Check if this column has predominantly 'C' or empty values (typical for critical indicator)
+            sample_values = df[col].dropna().astype(str).str.strip().str.upper().unique()
+            if len(sample_values) <= 2 and 'C' in sample_values:
+                critical_col = col
+                break
+    
+    if critical_col:
+        df['Is_Critical'] = df[critical_col].astype(str).str.strip().str.upper() == 'C'
     else:
         df['Is_Critical'] = False
     
